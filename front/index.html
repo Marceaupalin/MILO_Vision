@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiloAI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img id="logo" src="assets/logos/MILO-BLEU.png" alt="LogoMilo">
+            <img id="logo-right" src="assets/logos/ECE_LOGO_bleu.png" alt="LogoECE">
+        </header>
+
+        <main>
+            <canvas id="particle-sphere"></canvas>
+        </main>
+        <div id="text-zone">
+            <p id="milo_text">Bonjour !</p>
+        </div>
+        <button id="play-audio-btn" type="button" style="display:none;">
+                <img id="btn-play" src="assets/icons/VOCAL-fond-noir.png" alt="ButtonPlay">
+        </button>
+        <footer>
+            <button id="button1" type="button">
+                <img src="assets/icons/CROIX-fond-noir.png" alt="Button1">
+            </button>
+            <button id="button2" type="button">
+                <img id="btn2_img" src="assets/icons/REC_launch_BLEU.png" alt="Button2">
+            </button>
+            <button id="button3" type="button">
+                <img src="assets/icons/MICRO-fond-noir.png" alt="Button3">
+            </button>
+        </footer>
+    </div>
+</body>
+
+<script src="scripts/particleSphere.js"></script>
+<script src="scripts/textZone.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="scripts/buttons.js"></script>
+<script src="scripts/audioPlay.js"></script>
+
+

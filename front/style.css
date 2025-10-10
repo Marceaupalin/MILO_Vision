@@ -1,0 +1,129 @@
+body {
+    background-color: navy;
+    transition: background-color 2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background-color: rgb(255, 255, 255);
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    height: 90vh;
+    aspect-ratio: 9/16;
+}
+
+header {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+}
+
+#logo {
+    max-height: 5vh;
+    min-height: 50px;
+    width: auto;
+}
+
+#logo-right {
+    position: absolute;
+    top: 13px;
+    right: 13px;
+    max-height: 4vh;
+    min-height: 40px;
+    width: auto;
+}
+
+#title {
+    color: white;
+    text-align: center;
+    margin: 10px 0 0 0;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+#particle-sphere {
+    width: 400px;
+    height: 400px;
+    background: transparent;
+}
+
+@font-face {
+    font-family: 'MaPolice';
+    src: url('assets/fonts/helvetica-neue-5/HelveticaNeueMedium.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+#text-zone{
+    font-family: 'MaPolice', Arial, sans-serif;
+    font-size: larger;
+    padding-bottom: 5vh;
+    color: navy;
+
+}
+
+#custom-text {
+    margin: 0;
+}
+
+
+footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5vh 5vw 5vh 5vw;
+    margin-left: 5vw;
+    margin-right: 5vw;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: rgba(0,0,0,0);
+    border: none;
+    height: 5vh;
+    border-radius: 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 0;
+    transition: transform 0.1s ease-in-out;
+}
+
+button img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+button:active {
+    transform: scale(0.9);
+}
+
+#play-audio-btn {
+    height: 5vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
