@@ -15,6 +15,10 @@
 
         <main>
             <canvas id="particle-sphere"></canvas>
+            <div id="vision-preview" style="position:absolute; right:10px; top:80px; background:#000; padding:6px; border-radius:8px; display:none;">
+              <img id="vision-img" src="" alt="vision" style="max-width:280px; max-height:180px; display:block;">
+              <div id="vision-caption" style="color:#fff; font-size:12px; margin-top:4px; max-width:280px;"></div>
+            </div>
         </main>
         <div id="text-zone">
             <p id="milo_text">Bonjour !</p>
@@ -52,6 +56,14 @@
       const socket = io(baseURL);
       socket.on("vision_detection", (data) => {
         console.log("vision_detection:", data);
+        if (data && data.image_url) {
+          const imgEl = document.getElementById('vision-img');
+          const box = document.getElementById('vision-preview');
+          imgEl.src = baseURL + data.image_url + `?t=${Date.now()}`;
+          box.style.display = 'block';
+          const cap = document.getElementById('vision-caption');
+          cap.textContent = data.caption || '';
+        }
       });
     })();
   </script>

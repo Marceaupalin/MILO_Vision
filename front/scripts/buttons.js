@@ -1,6 +1,7 @@
 const img = document.getElementById("btn2_img");
 const btn2 = document.getElementById("button2");
 const btn4 = document.getElementById("button4");
+let visionRunning = false;
 
 const btn3 = document.getElementById("button3");
 
@@ -91,10 +92,21 @@ btn4.addEventListener("click", async (e) => {
   e.preventDefault();
   try {
     const baseURL = window.__MILO_BASE_URL__ || (window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin);
-    const resp = await fetch(`${baseURL}/start-vision`, { method: "POST" });
-    const data = await resp.json();
-    console.log("Start vision response:", data);
-    setCustomText("Vision démarrée...");
+    if (!visionRunning) {
+      const resp = await fetch(`${baseURL}/start-vision`, { method: "POST" });
+      const data = await resp.json();
+      console.log("Start vision response:", data);
+      setCustomText("Vision démarrée...");
+      visionRunning = true;
+    } else {
+      const resp = await fetch(`${baseURL}/stop-vision`, { method: "POST" });
+      const data = await resp.json();
+      console.log("Stop vision response:", data);
+      setCustomText("Vision arrêtée.");
+      visionRunning = false;
+      const box = document.getElementById('vision-preview');
+      if (box) box.style.display = 'none';
+    }
   } catch (err) {
     console.error("Erreur lors de /start-vision:", err);
   }

@@ -16,6 +16,7 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 last_chunk_event = threading.Event()
+vision_stop_event = threading.Event()
 
 # Vision thread handle
 vision_thread = None
@@ -23,6 +24,12 @@ vision_thread = None
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONT_DIR = BASE_DIR / "front"
+
+# Serve latest vision frames
+@app.route("/vision/image/<filename>")
+def serve_vision_image(filename):
+    filename = secure_filename(filename)
+    return send_from_directory(file_manager.images_raw_dir, filename)
 
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
@@ -38,11 +45,23 @@ def start_vision():
     global vision_thread
     try:
         if vision_thread is None or not vision_thread.is_alive():
-            vision_thread = threading.Thread(target=vision.vision_loop, args=(socketio,), daemon=True)
+            vision_stop_event.clear()
+            vision_thread = threading.Thread(target=vision.vision_loop, args=(socketio,), kwargs={"stop_event": vision_stop_event}, daemon=True)
             vision_thread.start()
             return {"status": "ok", "message": "Vision loop started"}, 200
         else:
             return {"status": "ok", "message": "Vision loop already running"}, 200
+    except Exception as e:
+        return {"status": "error", "message": str(e)}, 500
+@app.route("/stop-vision", methods=["POST"])
+def stop_vision():
+    global vision_thread
+    try:
+        if vision_thread is not None and vision_thread.is_alive():
+            vision_stop_event.set()
+            vision_thread.join(timeout=1)
+            return {"status": "ok", "message": "Vision loop stopped"}, 200
+        return {"status": "ok", "message": "Vision loop not running"}, 200
     except Exception as e:
         return {"status": "error", "message": str(e)}, 500
 
