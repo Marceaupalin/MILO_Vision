@@ -1,4 +1,3 @@
-from faster_whisper import WhisperModel
 from pathlib import Path
 import time
 import os
@@ -12,12 +11,8 @@ class Transcriber:
         self._model_size = model_size
         self._device = device
         self._compute_type = compute_type
-        self._model = WhisperModel(str(self._model_size), device=self._device, compute_type=self._compute_type)
-
-        # GPU INT8
-        # self._model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
-        # CPU
-        # self._model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        # Stub mode: no actual model is loaded so the app can run without Whisper
+        self._model = None
 
         self._output_dir = file_manager.transcript_dir
         self._output_dir.mkdir(exist_ok=True)
@@ -42,7 +37,8 @@ class Transcriber:
         self.setAudioFile(audio_dir)
 
     def load_model(self):
-        self._model = WhisperModel(str(self._model_size), device=self._device, compute_type=self._compute_type)
+        # Stub: do nothing, keep self._model as None
+        self._model = None
 
     def clearTransciptDir(self):
         if not self._output_dir.exists():
@@ -86,24 +82,18 @@ class Transcriber:
             print(f"{output_path.name} already exist, pass")
             return
 
-        print(f"Begin transcript of : {audio_path.name}")
+        print(f"Begin transcript (stub) of : {audio_path.name}")
         start_time = time.time()
 
-        segments, info = self._model.transcribe(str(audio_path), beam_size=5)
-
-        print("Detected language '%s' with probability %f" % (info.language, info.language_probability))
-
+        # Stub output: deterministic placeholder transcript so downstream pipeline can run
         with open(output_path, "w", encoding="utf-8") as f:
-            for segment in segments:
-                start = segment.start
-                end = segment.end
-                text = segment.text.strip()
-                f.write(f"[{start:.2f} - {end:.2f}] {text}\n")
+            f.write("[0.00 - 1.23] Ceci est un transcript factice genere sans modele.\n")
+            f.write("[1.23 - 3.45] Le systeme fonctionne en mode demo sans Whisper.\n")
 
         delta = time.time() - start_time
         print(f"File saved to : {output_path}")
-        #message_queue.message_queue_handler.publish("Transcriber_topic", f"{output_path}")
-        print(f"Transcription completed in {delta:.2f} seconds")
+        # message_queue.message_queue_handler.publish("Transcriber_topic", f"{output_path}")
+        print(f"Transcription (stub) completed in {delta:.2f} seconds")
 
         return output_path.name
 
