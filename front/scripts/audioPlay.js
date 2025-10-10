@@ -1,4 +1,5 @@
-const socket = io(window.location.origin);
+const baseURL = window.__MILO_BASE_URL__ || (window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin);
+const socket = io(baseURL);
 
 
 let currentAudio = null;
