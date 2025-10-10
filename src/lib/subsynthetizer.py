@@ -1,4 +1,3 @@
-import ollama
 from pathlib import Path
 import re
 
@@ -113,6 +112,7 @@ class SubSynthesizer:
         self.transcripts_dir = Path(__file__).resolve().parent.parent.parent / "synthetiser" / "transcripts"
         self.output_dir = Path(__file__).resolve().parent.parent.parent / "synthetiser" / "sub_resumes"
         self.output_dir.mkdir(exist_ok=True)
+        # Stub: keep model name but do not load/call Ollama
         self.model = model
         self.system_prompt = system_prompt or self.default_prompt()
 
@@ -154,19 +154,11 @@ si la question porte sur ce contenu) :
         return re.sub(r"[^a-zA-Z0-9éèêëàâîïôùûçÉÈÊËÀÂÎÏÔÙÛÇ.,;:!?' \n-]","",text)
 
     def run_ollama(self, prompt: str, isQuestion: bool = False) -> str:
-
+        # Stub: return a deterministic placeholder instead of calling Ollama
         effective_system_prompt = self.question_prompt() if isQuestion else self.default_prompt()
-        print(effective_system_prompt)
-        print(prompt)
-        response = ollama.chat(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": effective_system_prompt},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        raw_text = response["message"]["content"]
-        return self.clean_text_for_tts(raw_text)
+        _ = effective_system_prompt  # keep for parity/logging without printing long prompts
+        base = "reponse placeholdere" if isQuestion else "resume placeholdere"
+        return self.clean_text_for_tts(base)
 
     def generate_from_file(self, transcript_path: Path, isQuestion: bool = False, output_dir: Path = None):
         transcript_path = Path(transcript_path)
