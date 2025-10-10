@@ -10,11 +10,15 @@ import shutil
 
 from lib import transcriber, subsynthetizer, file_manager, webm_to_wav_converter, tts
 from lib import message_queue
+from lib import vision
 
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 last_chunk_event = threading.Event()
+
+# Vision thread handle
+vision_thread = None
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,6 +31,20 @@ def serve_front(path):
         return send_from_directory(FRONT_DIR, path)
     else:
         return send_from_directory(FRONT_DIR, "index.html")
+
+
+@app.route("/start-vision", methods=["POST"])
+def start_vision():
+    global vision_thread
+    try:
+        if vision_thread is None or not vision_thread.is_alive():
+            vision_thread = threading.Thread(target=vision.vision_loop, args=(socketio,), daemon=True)
+            vision_thread.start()
+            return {"status": "ok", "message": "Vision loop started"}, 200
+        else:
+            return {"status": "ok", "message": "Vision loop already running"}, 200
+    except Exception as e:
+        return {"status": "error", "message": str(e)}, 500
 
 
 @app.route("/upload-audio", methods=["POST"])

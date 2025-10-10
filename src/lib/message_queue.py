@@ -53,3 +53,4 @@ def clearAllStreams():
     message_queue_handler.clear_stream("Transcriber_topic")
     message_queue_handler.clear_stream("Question_topic")
     message_queue_handler.clear_stream("Response_topic")
+    message_queue_handler.clear_stream("Vision_topic")

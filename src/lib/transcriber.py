@@ -15,21 +15,21 @@ class Transcriber:
         self._model = None
 
         self._output_dir = file_manager.transcript_dir
-        self._output_dir.mkdir(exist_ok=True)
+        self._output_dir.mkdir(exist_ok=True, parents=True)
 
         self._audio_dir = file_manager.wav_dir
-        self._audio_dir.mkdir(exist_ok=True)
+        self._audio_dir.mkdir(exist_ok=True, parents=True)
 
     def setModelSize(self, model_size):
         self._model_size = model_size
 
     def setOutputDir(self, output_dir):
         self._output_dir = Path(output_dir)
-        self._output_dir.mkdir(exist_ok=True)
+        self._output_dir.mkdir(exist_ok=True, parents=True)
 
     def setAudioDir(self, audio_dir):
         self._audio_dir = Path(audio_dir)
-        self._audio_dir.mkdir(exist_ok=True)
+        self._audio_dir.mkdir(exist_ok=True, parents=True)
 
     def setup_model(self, model_size, output_dir, audio_dir):
         self.setModelSize(model_size)

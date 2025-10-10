@@ -32,6 +32,9 @@
             <button id="button3" type="button">
                 <img src="assets/icons/MICRO-fond-noir.png" alt="Button3">
             </button>
+            <button id="button4" type="button">
+                <img src="assets/icons/EYE-fond-noir.png" alt="Button4">
+            </button>
         </footer>
     </div>
 </body>
@@ -41,5 +44,16 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="scripts/buttons.js"></script>
 <script src="scripts/audioPlay.js"></script>
+<script>
+    (function(){
+      const isFile = window.location.protocol === 'file:';
+      const baseURL = isFile ? 'http://localhost:5000' : window.location.origin;
+      window.__MILO_BASE_URL__ = baseURL;
+      const socket = io(baseURL);
+      socket.on("vision_detection", (data) => {
+        console.log("vision_detection:", data);
+      });
+    })();
+  </script>
 
 
