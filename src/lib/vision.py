@@ -479,7 +479,7 @@ class SceneDescriber:
             with torch.inference_mode():
                 out = self._model.generate(
                     **inputs,
-                    max_new_tokens=50,  # Réduit de 64 à 50 pour accélérer (suffisant pour une phrase)
+                    max_new_tokens=100,  # Augmenté pour éviter que le caption soit coupé
                     do_sample=False,
                     use_cache=True,  # Utiliser le cache pour accélérer la génération
                     pad_token_id=self._processor.tokenizer.eos_token_id,
@@ -541,6 +541,9 @@ def vision_loop(socketio, period_seconds=60, stop_event=None):
             cam.snapshot(img_path)
             print(f"[VISION] Image captured successfully")
             
+            # Démarrer le chronomètre après la capture de l'image
+            start_time = time.time()
+            
             # Étape 2: Détecter les objets
             print(f"[VISION] Step 2: Running object detection...")
             detections = det.infer(img_path)
@@ -558,6 +561,10 @@ def vision_loop(socketio, period_seconds=60, stop_event=None):
             
             print(f"[VISION] Description generated: '{caption[:50]}...'")
             
+            # Calculer le temps de traitement
+            processing_time = time.time() - start_time
+            print(f"[VISION] Processing time: {processing_time:.2f} seconds")
+            
             # Étape 4: Préparer le résultat (seulement si caption est prête)
             image_url = f"/vision/image/{img_path.name}"
             result = {
@@ -565,7 +572,8 @@ def vision_loop(socketio, period_seconds=60, stop_event=None):
                 "image_path": str(img_path),
                 "image_url": image_url,
                 "detections": detections,
-                "caption": caption
+                "caption": caption,
+                "processing_time": round(processing_time, 2)
             }
             
             # Étape 5: Sauvegarder le résultat
