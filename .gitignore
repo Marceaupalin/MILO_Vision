@@ -4,3 +4,4 @@ venv/
 __pycache__/
 vision
 images
+.DS_Store
