@@ -1,0 +1,23 @@
+# MILO Vision - Requirements File
+# Core dependencies for the MILO Vision project
+
+# Web Framework and API
+Flask
+Flask-SocketIO
+Flask-CORS
+Werkzeug
+
+# Computer Vision and Image Processing
+opencv-python
+Pillow
+
+# Machine Learning and AI
+torch
+torchvision
+rfdetr 
+timm #required for rfdetr
+
+
+# Transformers from source (required for Qwen2.5-VL support)
+git+https://github.com/huggingface/transformers
+accelerate

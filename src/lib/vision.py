@@ -1,5 +1,4 @@
 import time, json, sys, traceback
-import os
 from pathlib import Path
 from .file_manager import images_raw_dir, images_annotated_dir, vision_results_dir
 from .message_queue import message_queue_handler

@@ -1,6 +1,8 @@
 .venv/
+venv/
 .dist/
 __pycache__/
 vision
 images
 rf-detr-base.pth
+.DS_Store
