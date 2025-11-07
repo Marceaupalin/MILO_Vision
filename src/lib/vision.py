@@ -1,4 +1,4 @@
-import time, json
+import time, json, sys, traceback
 from pathlib import Path
 from .file_manager import images_raw_dir, images_annotated_dir, vision_results_dir
 from .message_queue import message_queue_handler
@@ -7,9 +7,13 @@ from .message_queue import message_queue_handler
 try:
     import cv2  # type: ignore
     _HAS_CV2 = True
-except Exception:
+    print(f"[VISION] OpenCV {cv2.__version__} chargé avec succès")
+except Exception as e:
     cv2 = None  # type: ignore
     _HAS_CV2 = False
+    print(f"[VISION] Erreur lors de l'import d'OpenCV: {type(e).__name__}: {e}")
+    print(f"[VISION] Python version: {sys.version}")
+    traceback.print_exc()
 
 # Optional ML deps (RF-DETR and Qwen VLM)
 try:
@@ -213,7 +217,7 @@ class SceneDescriber:
                     "role": "user",
                     "content": [
                         {"type": "image", "image": img},
-                        {"type": "text", "text": "Décris très brièvement la scène en une phrase."},
+                        {"type": "text", "text": "Tu es une étudiante et tu dois analyser visuellement l’image et décrire la scène en une seule phrase claire et précise. Ta description doit refléter une compréhension contextuelle complète : identifie le lieu exact (ex. salle de classe, amphithéâtre, bibliothèque, couloir, extérieur…), les types de personnes présentes (étudiants, professeur, intervenant, public, etc.) et leur activité principale. L'objectif est que tu comprennes le contexte dans lequel tu es placée."},
                     ],
                 }
             ]
