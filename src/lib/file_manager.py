@@ -26,8 +26,7 @@ backup_transcript = project_root_dir / "backup_transcripts"
 FINAL_TRANSCRIPT = transcript_dir / "transcript_final.txt"
 
 # Vision directories
-images_raw_dir = project_root_dir / "images" / "raw"
-images_annotated_dir = project_root_dir / "images" / "annotated"
+images_raw_dir = project_root_dir / "vision" / "raw"
 vision_results_dir = project_root_dir / "vision" / "results"
 
 def clearDirectory(path):

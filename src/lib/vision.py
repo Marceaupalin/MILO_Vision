@@ -1,6 +1,6 @@
 import time, json, sys, traceback
 from pathlib import Path
-from .file_manager import images_raw_dir, images_annotated_dir, vision_results_dir
+from .file_manager import images_raw_dir, vision_results_dir
 from .message_queue import message_queue_handler
 
 # Try to import OpenCV; if unavailable (e.g., Python 3.13 wheels), run in stub mode
@@ -595,10 +595,12 @@ def vision_loop(socketio, period_seconds=60, stop_event=None):
             traceback.print_exc()
         
         # Attendre avant la prochaine itération
-        print(f"[VISION] Waiting {period_seconds} seconds before next cycle...")
-        if stop_event is not None:
-            if stop_event.wait(period_seconds):
-                print("[VISION] Stop signal received during wait, exiting vision loop")
-                break
-        else:
-            time.sleep(period_seconds)
+        finally:
+        # CE BLOC EST ALWAYS EXECUTED
+            print(f"[VISION] Waiting {period_seconds} seconds before next cycle...")
+            if stop_event is not None:
+                if stop_event.wait(period_seconds):
+                    print("[VISION] Stop signal received during wait, exiting vision loop")
+                    break
+            else:
+                time.sleep(period_seconds)
