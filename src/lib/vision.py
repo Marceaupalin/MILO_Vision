@@ -485,7 +485,7 @@ class SceneDescriber:
                 print(f"[VISION] Detection info: {detection_info}")
         
         # Construire le prompt simple
-        prompt_text = f"{detection_info}Décris cette scène en une phrase : identifie le lieu (salle de classe, amphithéâtre, bibliothèque, couloir, extérieur) et l'activité principale."
+        prompt_text = f"{detection_info} Analyse l’image et décris la scène de manière concise mais précise. \n1. Identifie clairement le lieu parmi les options suivantes : salle de classe, amphithéâtre, bibliothèque, couloir, extérieur ou autre (préciser si “autre”). 2. Décris l’activité principale en cours (ex : suivre un cours, enseigner, lire, discuter, attendre, se déplacer…). 3. Détermine le rôle probable de la personne détectée : étudiant, professeur, personnel scolaire ou personne externe. Explique brièvement les indices visuels (âge apparent, posture, vêtements, accessoires, emplacement dans la scène…). 4. Analyse l’expression du visage et indique l’émotion dominante (ex : neutre, concentré, stressé, heureux, ennuyé, surpris…). 5. Donne le contexte général de la scène en une phrase synthétique (ex : “un professeur expliquant une notion devant sa classe”, “un étudiant travaillant seul en bibliothèque”, etc.). Réponds en respectant strictement cette structure...\n"
         print(f"[VISION] Prompt: {prompt_text[:100]}...")
         
         # Étape 3: Préparer les messages
@@ -547,7 +547,7 @@ class SceneDescriber:
             with torch.inference_mode():
                 out = self._model.generate(
                     **inputs,
-                    max_new_tokens=100,
+                    max_new_tokens=200,
                     do_sample=False,
                     use_cache=True,
                     pad_token_id=self._processor.tokenizer.eos_token_id,
