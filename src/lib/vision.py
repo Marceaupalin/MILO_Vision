@@ -2,6 +2,10 @@ import time, json, sys, traceback
 from pathlib import Path
 from .file_manager import images_raw_dir, vision_results_dir
 from .message_queue import message_queue_handler
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="torch.nn.modules.module")
+
 
 # Try to import OpenCV; if unavailable (e.g., Python 3.13 wheels), run in stub mode
 try:
@@ -48,6 +52,16 @@ except Exception:
     torch = None  # type: ignore
     _HAS_TRANSFORMERS = False
 
+# Détection du device GPU/CPU au chargement du module
+_DEVICE = "cpu"
+if torch is not None and torch.cuda.is_available():
+    _DEVICE = "cuda"
+    print(f"[VISION] 🚀 GPU détecté : {torch.cuda.get_device_name(0)}")
+    print(f"[VISION] CUDA version : {torch.version.cuda}")
+    print(f"[VISION] Mémoire GPU disponible : {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
+else:
+    print("[VISION] ⚠️ Aucun GPU détecté, utilisation du CPU")
+
 class CameraCapture:
     def __init__(self, device_index=0, width=1280, height=720):
         if not _HAS_CV2:
@@ -73,11 +87,14 @@ class Detector:
         self._processor = None
         self._model = None
         self._backend = None
+        self._device = _DEVICE
+        print(f"[VISION DEBUG] SceneDescriber device: {self._device}")
+        print(f"[VISION DEBUG] torch.cuda.is_available(): {torch.cuda.is_available()}")
+        print(f"[VISION DEBUG] _DEVICE global: {_DEVICE}")
 
         # Prefer RF-DETR pip package if available
         if _HAS_RFDETR and _HAS_PIL:
             try:
-                # Try different initialization methods for RF-DETR
                 rf_model = None
                 
                 # Method 1: RFDETRBase class
@@ -98,6 +115,12 @@ class Detector:
                     print("[VISION] RF-DETR using module reference (fallback)")
 
                 self._rf_model = rf_model
+                
+                # Déplacer le modèle RF-DETR sur GPU si disponible
+                if self._device == "cuda" and hasattr(self._rf_model, "to"):
+                    self._rf_model = self._rf_model.to(self._device)
+                    print(f"[VISION] RF-DETR moved to {self._device}")
+                
                 self._backend = "rfdetr"
                 
                 # Optimiser RF-DETR pour l'inférence si disponible
@@ -112,7 +135,7 @@ class Detector:
                     print(f"[VISION] Could not optimize RF-DETR (non-critical): {e}")
                 
                 self._ready = True
-                print("[VISION] RF-DETR (pip) backend enabled")
+                print(f"[VISION] RF-DETR (pip) backend enabled on {self._device}")
                 return
             except Exception as e:
                 print(f"[VISION] RF-DETR (pip) unavailable: {e}")
@@ -125,14 +148,27 @@ class Detector:
         if _HAS_TRANSFORMERS and _HAS_PIL:
             try:
                 model_id = "facebook/detr-resnet-50"
+                print(f"[VISION] Loading DETR processor...")
                 self._processor = AutoImageProcessor.from_pretrained(model_id)
+                
+                print(f"[VISION] Loading DETR model on {self._device}...")
                 self._model = AutoModelForObjectDetection.from_pretrained(model_id)
+                
+                # Déplacer explicitement le modèle sur GPU
+                self._model = self._model.to(self._device)
                 self._model.eval()
+                
+                # Si GPU, passer en half precision pour économiser la mémoire
+                if self._device == "cuda":
+                    self._model = self._model.half()
+                    print("[VISION] DETR model converted to half precision (FP16)")
+                
                 self._backend = "hf_detr"
                 self._ready = True
-                print("[VISION] DETR (HF) backend enabled")
+                print(f"[VISION] DETR (HF) backend enabled on {self._device}")
             except Exception as e:
                 print(f"[VISION] DETR (HF) unavailable: {e}")
+                traceback.print_exc()
                 self._backend = None
                 self._ready = False
 
@@ -304,13 +340,22 @@ class Detector:
             try:
                 img = Image.open(image_path).convert("RGB")
                 inputs = self._processor(images=img, return_tensors="pt")
-                # Utiliser inference_mode() pour de meilleures performances
+                
+                # Déplacer les inputs sur le même device que le modèle
+                inputs = {k: v.to(self._device) for k, v in inputs.items()}
+                
+                # Si GPU et half precision, convertir aussi les inputs
+                if self._device == "cuda":
+                    inputs = {k: v.half() if v.dtype == torch.float32 else v for k, v in inputs.items()}
+                
                 with torch.inference_mode():
                     outputs = self._model(**inputs)
-                target_sizes = torch.tensor([img.size[::-1]])
+                
+                target_sizes = torch.tensor([img.size[::-1]]).to(self._device)
                 results = self._processor.post_process_object_detection(
                     outputs, threshold=0.5, target_sizes=target_sizes
                 )[0]
+                
                 dets = []
                 for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
                     x1, y1, x2, y2 = [float(v) for v in box.tolist()]
@@ -322,6 +367,7 @@ class Detector:
                 return dets
             except Exception as e:
                 print(f"[VISION] DETR (HF) infer error: {e}")
+                traceback.print_exc()
                 return []
 
         return []
@@ -332,6 +378,8 @@ class SceneDescriber:
         self._ready = False
         self._processor = None
         self._model = None
+        self._device = _DEVICE
+        
         if _HAS_TRANSFORMERS and _HAS_PIL:
             try:
                 base_model_id = "Qwen/Qwen2.5-VL-3B-Instruct"
@@ -340,21 +388,31 @@ class SceneDescriber:
                 self._processor = AutoProcessor.from_pretrained(base_model_id)
                 print(f"[VISION] Processor loaded successfully")
                 
-                print(f"[VISION] Loading model from {base_model_id}...")
-                self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-                    base_model_id,
-                    device_map="auto",
-                    dtype=torch.float16 if torch.cuda.is_available() else torch.float32
-                )
+                print(f"[VISION] Loading model from {base_model_id} on {self._device}...")
+                
+                # Charger avec le bon dtype selon le device
+                if self._device == "cuda":
+                    self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                        base_model_id,
+                        torch_dtype=torch.float16,
+                        device_map="auto"  # device_map="auto" gère le placement automatique
+                    )
+                    print("[VISION] Model loaded in FP16 on GPU")
+                else:
+                    self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                        base_model_id,
+                        torch_dtype=torch.float32
+                    )
+                    self._model = self._model.to(self._device)
+                    print("[VISION] Model loaded in FP32 on CPU")
+                
                 self._model.eval()
                 
                 # Optimisations PyTorch pour l'inférence
-                if torch is not None and torch.cuda.is_available():
-                    # Activer cudnn benchmark pour accélérer les convolutions
+                if self._device == "cuda":
                     torch.backends.cudnn.benchmark = True
                     print("[VISION] CuDNN benchmark enabled")
                     
-                    # Compiler le modèle avec torch.compile si disponible (PyTorch 2.0+)
                     try:
                         if hasattr(torch, "compile"):
                             print("[VISION] Compiling model with torch.compile...")
@@ -364,7 +422,14 @@ class SceneDescriber:
                         print(f"[VISION] torch.compile not available or failed (non-critical): {e}")
                 
                 self._ready = True
-                print("[VISION] Qwen VLM loaded and ready")
+                print(f"[VISION] Qwen VLM loaded and ready on {self._device}")
+                
+                # Afficher l'utilisation mémoire GPU
+                if self._device == "cuda":
+                    allocated = torch.cuda.memory_allocated(0) / 1e9
+                    reserved = torch.cuda.memory_reserved(0) / 1e9
+                    print(f"[VISION] GPU memory - Allocated: {allocated:.2f} GB, Reserved: {reserved:.2f} GB")
+                    
             except Exception as e:
                 print(f"[VISION] Qwen VLM unavailable: {e}")
                 import traceback
@@ -460,30 +525,40 @@ class SceneDescriber:
                 images=[img],
                 return_tensors="pt"
             )
-            print(f"[VISION] Inputs processed, device: {self._model.device}")
             
-            # Déplacer vers le device du modèle
-            if torch is not None:
-                inputs = {k: v.to(self._model.device) if isinstance(v, torch.Tensor) else v for k, v in inputs.items()}
-            print("[VISION] Inputs moved to device")
+            # Déplacer tous les tensors sur le device du modèle
+            model_device = next(self._model.parameters()).device
+            inputs = {k: v.to(model_device) if isinstance(v, torch.Tensor) else v for k, v in inputs.items()}
+            
+            print(f"[VISION] Inputs processed and moved to device: {model_device}")
+            
+            # Afficher mémoire GPU avant génération
+            if self._device == "cuda":
+                allocated = torch.cuda.memory_allocated(0) / 1e9
+                print(f"[VISION] GPU memory before generation: {allocated:.2f} GB")
+                
         except Exception as e:
             print(f"[VISION] Error processing inputs: {e}")
             traceback.print_exc()
             return ""
 
-        # Étape 6: Générer la réponse
         try:
             print("[VISION] Starting generation...")
-            # Utiliser inference_mode() au lieu de no_grad() pour de meilleures performances
             with torch.inference_mode():
                 out = self._model.generate(
                     **inputs,
-                    max_new_tokens=100,  # Augmenté pour éviter que le caption soit coupé
+                    max_new_tokens=100,
                     do_sample=False,
-                    use_cache=True,  # Utiliser le cache pour accélérer la génération
+                    use_cache=True,
                     pad_token_id=self._processor.tokenizer.eos_token_id,
                 )
             print(f"[VISION] Generation complete, output shape: {out.shape}")
+            
+            # Afficher mémoire GPU après génération
+            if self._device == "cuda":
+                allocated = torch.cuda.memory_allocated(0) / 1e9
+                print(f"[VISION] GPU memory after generation: {allocated:.2f} GB")
+                
         except Exception as e:
             print(f"[VISION] Error during generation: {e}")
             traceback.print_exc()

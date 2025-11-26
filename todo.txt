@@ -1,0 +1,4 @@
+- connecter a google collab pour utiliser un gpu en ligne bcp plus puissant
+- Faire attention a ne pas retelecharger le modele a chaque fois (c'est ce qui cause le téléchargement au début)
+- ajouter un modele de detection qui detecte un changement important pour prendre une photo
+- prendre en photo plusieurs scenario pour tester
